@@ -444,8 +444,8 @@ def main(caminho_pdf, colaboradores, lista_gestores=None):
                                                    colaboradores)
 
         print("Processamento concluído com sucesso!")
-        return tabela_final[['Pagina_PDF', 'Dia', '1a E.', '1a S.', '2a E.',
-                    '2a S.', '3a E.', '3a S.', 'Abono', 'Observação', 'Data', 'COLABORADOR', 
+        return tabela_final[['1a E.', '1a S.', '2a E.',
+                    '2a S.', '3a E.', '3a S.', 'Abono', 'Observação', 'Pagina_PDF', 'Dia', 'Data', 'COLABORADOR', 
                     'AUSENCIA', 'ENTRADA', 'SAIDA INTERVALO', 'VOLTA INTERVALO', 'SAIDA', 'ALERTA']]
 
     except FileNotFoundError:
