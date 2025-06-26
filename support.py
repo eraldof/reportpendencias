@@ -31,10 +31,13 @@ def import_horarios(uiid: str = '1Xo19_dftUc3GsTK-R6mKz8EAiLgGouBwKcxsu9ioJVc', 
         'SEG A QUI': 'Segunda, Terca, Quarta, Quinta',
         'TER - QUI - SEX': 'Terca, Quinta, Sexta',
         'TER - QUI': 'Terca, Quinta',
-        'SEG - QUA - SEX': 'Segunda, Quarta, Sexta'
+        'SEG - QUA - SEX': 'Segunda, Quarta, Sexta',
+        'SAB' : 'Sabado',
+        'SEX' : 'Sexta'
     }
 
     horarios['PERIODO'] = horarios['PERIODO'].map(lambda x: horarios_dias.get(x, ''))
+    horarios['PERIODO.1'] = horarios['PERIODO.1'].map(lambda x: horarios_dias.get(x, ''))
 
     return horarios
 
@@ -78,14 +81,15 @@ def obter_horario_programado(colaborador: str, dia_semana: str, df_horarios: pd.
         return None, None
     
     # Sábado usa colunas diferentes (ENTRADA.1, SAIDA.1)
-    if dia_semana.lower() in ['sábado', 'sabado']:
+    if dia_semana.lower() in horario_colab['PERIODO.1'].iloc[0]:
         entrada_prog = horario_colab['ENTRADA.1'].iloc[0]
         saida_prog = horario_colab['SAIDA.1'].iloc[0]
-    elif dia_semana.lower() == 'domingo':
-        return None, None
-    else:
+    elif dia_semana.lower() in horario_colab['PERIODO'].iloc[0]:
         entrada_prog = horario_colab['ENTRADA'].iloc[0]
         saida_prog = horario_colab['SAIDA'].iloc[0]
+    else:
+        return None, None
+    
     
     entrada_prog = converter_para_time(entrada_prog)
     saida_prog = converter_para_time(saida_prog)
@@ -397,54 +401,61 @@ def exec_parte2(tabela_ponto: pd.DataFrame, lista_gestores: List[str] = nomes_co
     tabela_ponto = tabela_ponto.copy()
     
     for idx, row in tabela_ponto.iterrows():
+        
         nome = row.get('COLABORADOR', '')
         dia_semana = row.get('Dia', '')
         entrada = converter_para_time(row.get('1a E.', ''))
+        
         if dia_semana == 'Sabado':
-            saida_prog = converter_para_time(row.get('1a S.', ''))
+            saida = converter_para_time(row.get('1a S.', ''))
         else:
             saida = converter_para_time(row.get('2a S.', ''))
+            saida_almoco = converter_para_time(row.get('1a S.', ''))
+            volta_almoco = converter_para_time(row.get('2a E.', ''))
+        
         observacao = row.get('Observação', '')
-        ausente = row.get('AUSENCIA', '')
 
-        temp = horarios.loc[horarios['COLABORADORES'] == nome]
-
-        if nome in lista_gestores:
-            tabela_ponto.at[idx, 'ALERTA'] = 'N'
-            continue
-
-
-        elif observacao != '' or dia_semana == 'Domingo':
+        if nome in lista_gestores or observacao != '' or dia_semana == 'Domingo':
             tabela_ponto.at[idx, 'ALERTA'] = 'N'
             continue
         
         # Processamento para horário normal
-        elif dia_semana:
-            entrada_prog, saida_prog = obter_horario_programado(nome, dia_semana, horarios)
-            
-            if entrada_prog is None or saida_prog is None:
-                tabela_ponto.at[idx, 'ALERTA'] = 'S/ ENTRADA PROGRAMADA'
-                continue
+       
+        entrada_prog, saida_prog = obter_horario_programado(nome, dia_semana, horarios)
         
-            if entrada is None:
-                tabela_ponto.at[idx, 'ENTRADA'] = 'SEM MARCAÇÃO'
-                tabela_ponto.at[idx, 'ALERTA'] = 'S'
-                continue
-
-            if saida is None:
-                tabela_ponto.at[idx, 'SAIDA'] = 'SEM MARCAÇÃO'
-                tabela_ponto.at[idx, 'ALERTA'] = 'S'
-                continue 
-
-            if entrada > entrada_prog:
-                tabela_ponto.at[idx, 'ALERTA'] = 'ATRASO'
-
-            if saida < saida_prog:
-                tabela_ponto.at[idx, 'ALERTA'] = 'S'
-                tabela_ponto.at[idx, 'SAIDA'] = 'SAIDA ANTECIPADA'
-            
+        if entrada_prog is None or saida_prog is None:
+            tabela_ponto.at[idx, 'ALERTA'] = 'S/ ENTRADA PROGRAMADA'
             continue
     
+        if entrada is None:
+            tabela_ponto.at[idx, 'ENTRADA'] = 'SEM MARCAÇÃO'
+            tabela_ponto.at[idx, 'ALERTA'] = 'S'
+            continue
+
+        if saida is None:
+            tabela_ponto.at[idx, 'SAIDA'] = 'SEM MARCAÇÃO'
+            tabela_ponto.at[idx, 'ALERTA'] = 'S'
+            continue 
+
+        if saida_almoco is None:
+            tabela_ponto.at[idx, 'SAIDA INTERVALO'] = 'SEM MARCAÇÃO'
+            tabela_ponto.at[idx, 'ALERTA'] = 'S'
+            continue
+
+        if volta_almoco is None:
+            tabela_ponto.at[idx, 'VOLTA INTERVALO'] = 'SEM MARCAÇÃO'
+            tabela_ponto.at[idx, 'ALERTA'] = 'S'
+            continue
+
+        if entrada > entrada_prog:
+            tabela_ponto.at[idx, 'ALERTA'] = 'ATRASO'
+
+        if saida < saida_prog:
+            tabela_ponto.at[idx, 'ALERTA'] = 'S'
+            tabela_ponto.at[idx, 'SAIDA'] = 'SAIDA ANTECIPADA'
+        
+        continue
+
     return tabela_ponto
 
 
@@ -452,6 +463,7 @@ def save(tabela_consolidada: pd.DataFrame, nome_arquivo: str) -> pd.DataFrame:
     with pd.ExcelWriter(nome_arquivo, engine='openpyxl') as writer:
         tabela_consolidada.to_excel(writer, sheet_name='Dados_Consolidados', index=False)
     return tabela_consolidada
+
 
 
 def main(caminhopdf, nomes_colaboradores, gestores):
@@ -462,4 +474,3 @@ def main(caminhopdf, nomes_colaboradores, gestores):
     return resultado[['Pagina_PDF', 'Dia', '1a E.', '1a S.', '2a E.',
                     '2a S.', '3a E.', '3a S.', 'Abono', 'Observação', 'Data', 'COLABORADOR', 
                     'AUSENCIA', 'ENTRADA', 'SAIDA INTERVALO', 'VOLTA INTERVALO', 'SAIDA', 'ALERTA']]
-
