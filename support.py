@@ -31,13 +31,10 @@ def import_horarios(uiid: str = '1Xo19_dftUc3GsTK-R6mKz8EAiLgGouBwKcxsu9ioJVc', 
         'SEG A QUI': 'Segunda, Terca, Quarta, Quinta',
         'TER - QUI - SEX': 'Terca, Quinta, Sexta',
         'TER - QUI': 'Terca, Quinta',
-        'SEG - QUA - SEX': 'Segunda, Quarta, Sexta',
-        'SAB' : 'Sabado',
-        'SEX' : 'Sexta'
+        'SEG - QUA - SEX': 'Segunda, Quarta, Sexta'
     }
 
     horarios['PERIODO'] = horarios['PERIODO'].map(lambda x: horarios_dias.get(x, ''))
-    horarios['PERIODO.1'] = horarios['PERIODO.1'].map(lambda x: horarios_dias.get(x, ''))
 
     return horarios
 
@@ -81,17 +78,14 @@ def obter_horario_programado(colaborador: str, dia_semana: str, df_horarios: pd.
         return None, None
     
     # Sábado usa colunas diferentes (ENTRADA.1, SAIDA.1)
-    if dia_semana.lower() in horario_colab['PERIODO.1'].iloc[0].lower():
+    if dia_semana.lower() in ['sábado', 'sabado']:
         entrada_prog = horario_colab['ENTRADA.1'].iloc[0]
         saida_prog = horario_colab['SAIDA.1'].iloc[0]
-    
-    elif dia_semana.lower() in horario_colab['PERIODO'].iloc[0].lower():
+    elif dia_semana.lower() == 'domingo':
+        return None, None
+    else:
         entrada_prog = horario_colab['ENTRADA'].iloc[0]
         saida_prog = horario_colab['SAIDA'].iloc[0]
-    
-    else:
-        return None, None
-    
     
     entrada_prog = converter_para_time(entrada_prog)
     saida_prog = converter_para_time(saida_prog)
@@ -270,29 +264,29 @@ def transformar_ponto(df: pd.DataFrame, nome_colaborador: Optional[str] = None, 
         
         # Gestores sempre sem alerta
         if eh_gestor:
-            df_transformed.at[idx, 'ALERTA'] = ''
+            df_transformed.at[idx, 'ALERTA'] = 'N'
             continue
         
         # Com observação, sem alerta
         if not is_empty(observacao):
-            df_transformed.at[idx, 'ALERTA'] = ''
+            df_transformed.at[idx, 'ALERTA'] = 'N'
             continue
 
         elif dia_semana == 'Domingo':
-            df_transformed.at[idx, 'ALERTA'] = ''
+            df_transformed.at[idx, 'ALERTA'] = 'N'
             continue
         
         elif situacao_primeira['tipo'] == 'ausente':
-            df_transformed.at[idx, 'AUSENCIA'] = 'SIM'
+            df_transformed.at[idx, 'AUSENCIA'] = 'S'
             df_transformed.at[idx, 'ALERTA'] = 'S'
             continue
         
         elif situacao_primeira['tipo'] in ['isento', 'ferias', 'registro_positron']:
-            df_transformed.at[idx, 'ALERTA'] = ''
+            df_transformed.at[idx, 'ALERTA'] = 'N'
             continue
         
         elif situacao_primeira['tipo'] == 'dsr':
-            df_transformed.at[idx, 'ALERTA'] = ''
+            df_transformed.at[idx, 'ALERTA'] = 'N'
             continue
 
         # Sábado: verifica 2 marcações
@@ -305,7 +299,7 @@ def transformar_ponto(df: pd.DataFrame, nome_colaborador: Optional[str] = None, 
                 df_transformed.at[idx, 'SAIDA'] = 'OK'
                 count += 1
             
-            df_transformed.at[idx, 'ALERTA'] = '' if count >= 2 else 'S'
+            df_transformed.at[idx, 'ALERTA'] = 'N' if count >= 2 else 'S'
             continue
         
         # Outros dias da semana
@@ -317,7 +311,7 @@ def transformar_ponto(df: pd.DataFrame, nome_colaborador: Optional[str] = None, 
             
             if marcacoes_vazias:
                 if not is_empty(observacao):
-                    df_transformed.at[idx, 'ALERTA'] = ''
+                    df_transformed.at[idx, 'ALERTA'] = 'N'
                 else:
                     df_transformed.at[idx, 'AUSENCIA'] = 'SIM'
                     df_transformed.at[idx, 'ALERTA'] = 'S'
@@ -335,7 +329,7 @@ def transformar_ponto(df: pd.DataFrame, nome_colaborador: Optional[str] = None, 
                         df_transformed.at[idx, nome_campo] = 'OK'
                         qtd_marcacoes += 1
                 
-                df_transformed.at[idx, 'ALERTA'] = '' if qtd_marcacoes >= 4 else 'S'
+                df_transformed.at[idx, 'ALERTA'] = 'N' if qtd_marcacoes >= 4 else 'S'
             continue               
     
     return df_transformed
@@ -403,61 +397,54 @@ def exec_parte2(tabela_ponto: pd.DataFrame, lista_gestores: List[str] = nomes_co
     tabela_ponto = tabela_ponto.copy()
     
     for idx, row in tabela_ponto.iterrows():
-        
         nome = row.get('COLABORADOR', '')
         dia_semana = row.get('Dia', '')
         entrada = converter_para_time(row.get('1a E.', ''))
-        
         if dia_semana == 'Sabado':
-            saida = converter_para_time(row.get('1a S.', ''))
+            saida_prog = converter_para_time(row.get('1a S.', ''))
         else:
             saida = converter_para_time(row.get('2a S.', ''))
-            saida_almoco = converter_para_time(row.get('1a S.', ''))
-            volta_almoco = converter_para_time(row.get('2a E.', ''))
-        
         observacao = row.get('Observação', '')
+        ausente = row.get('AUSENCIA', '')
 
-        if nome in lista_gestores or observacao != '' or dia_semana == 'Domingo':
+        temp = horarios.loc[horarios['COLABORADORES'] == nome]
+
+        if nome in lista_gestores:
+            tabela_ponto.at[idx, 'ALERTA'] = 'N'
+            continue
+
+
+        elif observacao != '' or dia_semana == 'Domingo':
             tabela_ponto.at[idx, 'ALERTA'] = 'N'
             continue
         
         # Processamento para horário normal
-       
-        entrada_prog, saida_prog = obter_horario_programado(nome, dia_semana, horarios)
+        elif dia_semana:
+            entrada_prog, saida_prog = obter_horario_programado(nome, dia_semana, horarios)
+            
+            if entrada_prog is None or saida_prog is None:
+                tabela_ponto.at[idx, 'ALERTA'] = 'S/ ENTRADA PROGRAMADA'
+                continue
         
-        if entrada_prog is None or saida_prog is None:
-            tabela_ponto.at[idx, 'ALERTA'] = 'S/ ENTRADA PROGRAMADA'
+            if entrada is None:
+                tabela_ponto.at[idx, 'ENTRADA'] = 'SEM MARCAÇÃO'
+                tabela_ponto.at[idx, 'ALERTA'] = 'S'
+                continue
+
+            if saida is None:
+                tabela_ponto.at[idx, 'SAIDA'] = 'SEM MARCAÇÃO'
+                tabela_ponto.at[idx, 'ALERTA'] = 'S'
+                continue 
+
+            if entrada > entrada_prog:
+                tabela_ponto.at[idx, 'ALERTA'] = 'ATRASO'
+
+            if saida < saida_prog:
+                tabela_ponto.at[idx, 'ALERTA'] = 'S'
+                tabela_ponto.at[idx, 'SAIDA'] = 'SAIDA ANTECIPADA'
+            
             continue
     
-        if entrada is None:
-            tabela_ponto.at[idx, 'ENTRADA'] = 'SEM MARCAÇÃO'
-            tabela_ponto.at[idx, 'ALERTA'] = 'S'
-            continue
-
-        if saida is None:
-            tabela_ponto.at[idx, 'SAIDA'] = 'SEM MARCAÇÃO'
-            tabela_ponto.at[idx, 'ALERTA'] = 'S'
-            continue 
-
-        if saida_almoco is None:
-            tabela_ponto.at[idx, 'SAIDA INTERVALO'] = 'SEM MARCAÇÃO'
-            tabela_ponto.at[idx, 'ALERTA'] = 'S'
-            continue
-
-        if volta_almoco is None:
-            tabela_ponto.at[idx, 'VOLTA INTERVALO'] = 'SEM MARCAÇÃO'
-            tabela_ponto.at[idx, 'ALERTA'] = 'S'
-            continue
-
-        if entrada > entrada_prog:
-            tabela_ponto.at[idx, 'ALERTA'] = 'ATRASO'
-
-        if saida < saida_prog:
-            tabela_ponto.at[idx, 'ALERTA'] = 'S'
-            tabela_ponto.at[idx, 'SAIDA'] = 'SAIDA ANTECIPADA'
-        
-        continue
-
     return tabela_ponto
 
 
@@ -465,3 +452,14 @@ def save(tabela_consolidada: pd.DataFrame, nome_arquivo: str) -> pd.DataFrame:
     with pd.ExcelWriter(nome_arquivo, engine='openpyxl') as writer:
         tabela_consolidada.to_excel(writer, sheet_name='Dados_Consolidados', index=False)
     return tabela_consolidada
+
+
+def main(caminhopdf, nomes_colaboradores, gestores):
+    resultado = exec_parte1(caminhopdf, nomes_colaboradores, gestores)
+    if resultado is not None:
+        resultado = exec_parte2(resultado, gestores)
+    
+    return resultado[['Pagina_PDF', 'Dia', '1a E.', '1a S.', '2a E.',
+                    '2a S.', '3a E.', '3a S.', 'Abono', 'Observação', 'Data', 'COLABORADOR', 
+                    'AUSENCIA', 'ENTRADA', 'SAIDA INTERVALO', 'VOLTA INTERVALO', 'SAIDA', 'ALERTA']]
+
