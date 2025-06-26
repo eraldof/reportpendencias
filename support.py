@@ -425,7 +425,8 @@ def exec_parte2(tabela_ponto: pd.DataFrame, lista_gestores: List[str] = nomes_co
 
         elif dia_semana == 'Sabado' and sab2t == 'S':
             saida = converter_para_time(row.get('2a S.', ''))
-            
+            saida_almoco = converter_para_time(row.get('1a S.', ''))
+            volta_almoco = converter_para_time(row.get('2a E.', ''))            
         else:
             saida = converter_para_time(row.get('2a S.', ''))
             saida_almoco = converter_para_time(row.get('1a S.', ''))
@@ -439,29 +440,36 @@ def exec_parte2(tabela_ponto: pd.DataFrame, lista_gestores: List[str] = nomes_co
         if entrada is None:
             tabela_ponto.at[idx, 'ENTRADA'] = 'SEM MARCAÇÃO'
             tabela_ponto.at[idx, 'ALERTA'] = 'S'
-            continue
+        else:
+            if entrada > entrada_prog:
+                tabela_ponto.at[idx, 'ALERTA'] = 'ATRASO'
+
 
         if saida is None:
             tabela_ponto.at[idx, 'SAIDA'] = 'SEM MARCAÇÃO'
             tabela_ponto.at[idx, 'ALERTA'] = 'S'
-            continue 
+        else:
+            if saida < saida_prog:
+                tabela_ponto.at[idx, 'ALERTA'] = 'S'
+                tabela_ponto.at[idx, 'SAIDA'] = 'SAIDA ANTECIPADA'
+             
+        if dia_semana != 'Sabado':
+            if saida_almoco is None:
+                tabela_ponto.at[idx, 'SAIDA INTERVALO'] = 'SEM MARCAÇÃO'
+                tabela_ponto.at[idx, 'ALERTA'] = 'S'        
+            if volta_almoco is None:
+                tabela_ponto.at[idx, 'VOLTA INTERVALO'] = 'SEM MARCAÇÃO'
+                tabela_ponto.at[idx, 'ALERTA'] = 'S'
+        else:
+            if sab2t == 'S':
+                if saida_almoco is None:
+                    tabela_ponto.at[idx, 'SAIDA INTERVALO'] = 'SEM MARCAÇÃO'
+                    tabela_ponto.at[idx, 'ALERTA'] = 'S'        
+                if volta_almoco is None:
+                    tabela_ponto.at[idx, 'VOLTA INTERVALO'] = 'SEM MARCAÇÃO'
+                    tabela_ponto.at[idx, 'ALERTA'] = 'S'
+                    
 
-        if saida_almoco is None:
-            tabela_ponto.at[idx, 'SAIDA INTERVALO'] = 'SEM MARCAÇÃO'
-            tabela_ponto.at[idx, 'ALERTA'] = 'S'
-            continue
-
-        if volta_almoco is None:
-            tabela_ponto.at[idx, 'VOLTA INTERVALO'] = 'SEM MARCAÇÃO'
-            tabela_ponto.at[idx, 'ALERTA'] = 'S'
-            continue
-
-        if entrada > entrada_prog:
-            tabela_ponto.at[idx, 'ALERTA'] = 'ATRASO'
-
-        if saida < saida_prog:
-            tabela_ponto.at[idx, 'ALERTA'] = 'S'
-            tabela_ponto.at[idx, 'SAIDA'] = 'SAIDA ANTECIPADA'
         
         continue
 
