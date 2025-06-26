@@ -416,7 +416,7 @@ def exec_parte2(tabela_ponto: pd.DataFrame, lista_gestores: List[str] = nomes_co
         observacao = row.get('Observação', '')
 
         if nome in lista_gestores or observacao != '' or dia_semana == 'Domingo':
-            tabela_ponto.at[idx, 'ALERTA'] = 'N'
+            tabela_ponto.at[idx, 'ALERTA'] = ''
             continue
         
         # Processamento para horário normal
