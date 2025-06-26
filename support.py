@@ -78,7 +78,7 @@ def obter_horario_programado(colaborador: str, dia_semana: str, df_horarios: pd.
     horario_colab = df_horarios[df_horarios['COLABORADORES'] == colaborador]
     
     if horario_colab.empty:
-        return None, None
+        return None, None, None
     
     # Sábado usa colunas diferentes (ENTRADA.1, SAIDA.1)
     if dia_semana.lower() in horario_colab['PERIODO.1'].iloc[0].lower():
@@ -88,13 +88,13 @@ def obter_horario_programado(colaborador: str, dia_semana: str, df_horarios: pd.
         entrada_prog = horario_colab['ENTRADA'].iloc[0]
         saida_prog = horario_colab['SAIDA'].iloc[0]
     else:
-        return None, None
+        return None, None, None
     
-    
+    sab2t = horario_colab['SAB.2T'].iloc[0]
     entrada_prog = converter_para_time(entrada_prog)
     saida_prog = converter_para_time(saida_prog)
     
-    return entrada_prog, saida_prog
+    return entrada_prog, saida_prog, sab2t
 
 
 def calcular_diferenca_minutos(horario1: Optional[time], horario2: Optional[time]) -> Optional[float]:
@@ -404,30 +404,34 @@ def exec_parte2(tabela_ponto: pd.DataFrame, lista_gestores: List[str] = nomes_co
         
         nome = row.get('COLABORADOR', '')
         dia_semana = row.get('Dia', '')
-        entrada = converter_para_time(row.get('1a E.', ''))
         ausencia = row.get('AUSENCIA', '')
-        
-        if dia_semana == 'Sabado':
-            saida = converter_para_time(row.get('1a S.', ''))
-        else:
-            saida = converter_para_time(row.get('2a S.', ''))
-            saida_almoco = converter_para_time(row.get('1a S.', ''))
-            volta_almoco = converter_para_time(row.get('2a E.', ''))
         
         observacao = row.get('Observação', '')
 
         if nome in lista_gestores or observacao != '' or dia_semana == 'Domingo':
             tabela_ponto.at[idx, 'ALERTA'] = ''
             continue
-
+        
         if ausencia == 'SIM':
             continue
-
-        
         # Processamento para horário normal
        
-        entrada_prog, saida_prog = obter_horario_programado(nome, dia_semana, horarios)
+        entrada_prog, saida_prog, sab2t = obter_horario_programado(nome, dia_semana, horarios)
         
+        entrada = converter_para_time(row.get('1a E.', ''))
+        
+        if dia_semana == 'Sabado' and sab2t == 'N':
+            saida = converter_para_time(row.get('1a S.', ''))
+
+        elif dia_semana == 'Sabado' and sab2t == 'S':
+            saida = converter_para_time(row.get('2a S.', ''))
+            
+        else:
+            saida = converter_para_time(row.get('2a S.', ''))
+            saida_almoco = converter_para_time(row.get('1a S.', ''))
+            volta_almoco = converter_para_time(row.get('2a E.', ''))
+
+
         if entrada_prog is None or saida_prog is None:
             tabela_ponto.at[idx, 'ALERTA'] = 'S/ ENTRADA PROGRAMADA'
             continue
