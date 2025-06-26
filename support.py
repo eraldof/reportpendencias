@@ -81,10 +81,10 @@ def obter_horario_programado(colaborador: str, dia_semana: str, df_horarios: pd.
         return None, None
     
     # Sábado usa colunas diferentes (ENTRADA.1, SAIDA.1)
-    if dia_semana.lower() in horario_colab['PERIODO.1'].iloc[0]:
+    if dia_semana.lower() in horario_colab['PERIODO.1'].iloc[0].lower():
         entrada_prog = horario_colab['ENTRADA.1'].iloc[0]
         saida_prog = horario_colab['SAIDA.1'].iloc[0]
-    elif dia_semana.lower() in horario_colab['PERIODO'].iloc[0]:
+    elif dia_semana.lower() in horario_colab['PERIODO'].iloc[0].lower():
         entrada_prog = horario_colab['ENTRADA'].iloc[0]
         saida_prog = horario_colab['SAIDA'].iloc[0]
     else:
