@@ -405,6 +405,7 @@ def exec_parte2(tabela_ponto: pd.DataFrame, lista_gestores: List[str] = nomes_co
         nome = row.get('COLABORADOR', '')
         dia_semana = row.get('Dia', '')
         entrada = converter_para_time(row.get('1a E.', ''))
+        ausencia = row.get('AUSENCIA', '')
         
         if dia_semana == 'Sabado':
             saida = converter_para_time(row.get('1a S.', ''))
@@ -418,6 +419,10 @@ def exec_parte2(tabela_ponto: pd.DataFrame, lista_gestores: List[str] = nomes_co
         if nome in lista_gestores or observacao != '' or dia_semana == 'Domingo':
             tabela_ponto.at[idx, 'ALERTA'] = ''
             continue
+
+        if ausencia == 'SIM':
+            continue
+
         
         # Processamento para horário normal
        
