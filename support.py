@@ -270,29 +270,29 @@ def transformar_ponto(df: pd.DataFrame, nome_colaborador: Optional[str] = None, 
         
         # Gestores sempre sem alerta
         if eh_gestor:
-            df_transformed.at[idx, 'ALERTA'] = 'N'
+            df_transformed.at[idx, 'ALERTA'] = ''
             continue
         
         # Com observação, sem alerta
         if not is_empty(observacao):
-            df_transformed.at[idx, 'ALERTA'] = 'N'
+            df_transformed.at[idx, 'ALERTA'] = ''
             continue
 
         elif dia_semana == 'Domingo':
-            df_transformed.at[idx, 'ALERTA'] = 'N'
+            df_transformed.at[idx, 'ALERTA'] = ''
             continue
         
         elif situacao_primeira['tipo'] == 'ausente':
-            df_transformed.at[idx, 'AUSENCIA'] = 'S'
+            df_transformed.at[idx, 'AUSENCIA'] = 'SIM'
             df_transformed.at[idx, 'ALERTA'] = 'S'
             continue
         
         elif situacao_primeira['tipo'] in ['isento', 'ferias', 'registro_positron']:
-            df_transformed.at[idx, 'ALERTA'] = 'N'
+            df_transformed.at[idx, 'ALERTA'] = ''
             continue
         
         elif situacao_primeira['tipo'] == 'dsr':
-            df_transformed.at[idx, 'ALERTA'] = 'N'
+            df_transformed.at[idx, 'ALERTA'] = ''
             continue
 
         # Sábado: verifica 2 marcações
@@ -305,7 +305,7 @@ def transformar_ponto(df: pd.DataFrame, nome_colaborador: Optional[str] = None, 
                 df_transformed.at[idx, 'SAIDA'] = 'OK'
                 count += 1
             
-            df_transformed.at[idx, 'ALERTA'] = 'N' if count >= 2 else 'S'
+            df_transformed.at[idx, 'ALERTA'] = '' if count >= 2 else 'S'
             continue
         
         # Outros dias da semana
@@ -317,7 +317,7 @@ def transformar_ponto(df: pd.DataFrame, nome_colaborador: Optional[str] = None, 
             
             if marcacoes_vazias:
                 if not is_empty(observacao):
-                    df_transformed.at[idx, 'ALERTA'] = 'N'
+                    df_transformed.at[idx, 'ALERTA'] = ''
                 else:
                     df_transformed.at[idx, 'AUSENCIA'] = 'SIM'
                     df_transformed.at[idx, 'ALERTA'] = 'S'
@@ -335,7 +335,7 @@ def transformar_ponto(df: pd.DataFrame, nome_colaborador: Optional[str] = None, 
                         df_transformed.at[idx, nome_campo] = 'OK'
                         qtd_marcacoes += 1
                 
-                df_transformed.at[idx, 'ALERTA'] = 'N' if qtd_marcacoes >= 4 else 'S'
+                df_transformed.at[idx, 'ALERTA'] = '' if qtd_marcacoes >= 4 else 'S'
             continue               
     
     return df_transformed
@@ -465,14 +465,3 @@ def save(tabela_consolidada: pd.DataFrame, nome_arquivo: str) -> pd.DataFrame:
     with pd.ExcelWriter(nome_arquivo, engine='openpyxl') as writer:
         tabela_consolidada.to_excel(writer, sheet_name='Dados_Consolidados', index=False)
     return tabela_consolidada
-
-
-
-def main(caminhopdf, nomes_colaboradores, gestores):
-    resultado = exec_parte1(caminhopdf, nomes_colaboradores, gestores)
-    if resultado is not None:
-        resultado = exec_parte2(resultado, gestores)
-    
-    return resultado[['Pagina_PDF', 'Dia', '1a E.', '1a S.', '2a E.',
-                    '2a S.', '3a E.', '3a S.', 'Abono', 'Observação', 'Data', 'COLABORADOR', 
-                    'AUSENCIA', 'ENTRADA', 'SAIDA INTERVALO', 'VOLTA INTERVALO', 'SAIDA', 'ALERTA']]
