@@ -101,7 +101,7 @@ if st.session_state.df_processed is not None:
         
         # Aplicar filtros
         df_filtered = df.copy()
-        df_filtered = df_filtered[['Dia', 'Data', 'COLABORADOR', 'AUSENCIA', 'ENTRADA', 'SAIDA INTERVALO', 'VOLTA INTERVALO', 'SAIDA', 'AUSENCIA', 'ALERTA']]
+        df_filtered = df_filtered[['Dia', 'Data', 'COLABORADOR', 'ENTRADA', 'SAIDA INTERVALO', 'VOLTA INTERVALO', 'SAIDA', 'AUSENCIA', 'ALERTA']]
         
         if colaboradores_filtro:
             df_filtered = df_filtered[df_filtered['COLABORADOR'].isin(colaboradores_filtro)]
