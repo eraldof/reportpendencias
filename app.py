@@ -58,7 +58,7 @@ if pdf_file:
 
         with st.spinner("Processando PDF..."):
             try:
-                df_final = support.main(tmp_path, colaboradores, nomes_colaboradores.GESTORES)
+                df_final = support.main(tmp_path)
                 st.session_state.df_processed = df_final
                 st.sidebar.success("✅ Processamento concluído!")
             except Exception as e:
