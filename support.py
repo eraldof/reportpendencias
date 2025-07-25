@@ -626,6 +626,7 @@ def exec_parte2(tabela_ponto: pd.DataFrame, lista_gestores: List[str] = nomes_co
         else:
             if entrada > entrada_prog:
                 tabela_ponto.at[idx, 'ENTRADA'] = 'ATRASO'
+                tabela_ponto.at[idx, 'ALERTA'] = 'S'
 
 
         if saida is None:
