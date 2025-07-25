@@ -15,7 +15,7 @@ def df_to_excel(df: pd.DataFrame) -> bytes:
 
 st.set_page_config(
     page_title="Análise de Ponto - PDF para Excel",
-    page_icon="🕐"
+    page_icon="🕐",
     layout="wide",
     initial_sidebar_state="expanded"
 )
