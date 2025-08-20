@@ -44,8 +44,7 @@ if 'df_processed' not in st.session_state:
 # Processamento do PDF
 if pdf_file:
     if st.sidebar.button("🚀 Processar PDF", type="primary"):
-        colaboradores = CD_MAP[cd_selecionado]
-        
+    
         with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp:
             tmp.write(pdf_file.read())
             tmp_path = tmp.name
@@ -139,6 +138,7 @@ else:
     
     # Informações sobre os dados
     st.info("📁 Faça o upload de um arquivo PDF na barra lateral para começar a análise.")
+
 
 
 
