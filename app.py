@@ -27,7 +27,7 @@ with st.sidebar:
     st.header("⚙️ Configurações")
     cd_selecionado = st.selectbox(
         "Centro de Distribuição:",
-        options=list([31, 59, 67]),
+        options=[31, 59, 67],
         help="Selecione o CD para análise"
     )
     
@@ -139,5 +139,6 @@ else:
     
     # Informações sobre os dados
     st.info("📁 Faça o upload de um arquivo PDF na barra lateral para começar a análise.")
+
 
 
