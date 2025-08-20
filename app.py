@@ -22,13 +22,6 @@ st.set_page_config(
 
 st.title("🕐 Sistema de Análise de Ponto")
 
-# Mapeamento de Centros de Distribuição para listas de colaboradores
-CD_MAP = {
-    "31": nomes_colaboradores.COLABORADORES31,
-    "59": nomes_colaboradores.COLABORADORES59,
-    "67": nomes_colaboradores.COLABORADORES67,
-}
-
 # Sidebar para configurações
 with st.sidebar:
     st.header("⚙️ Configurações")
@@ -146,4 +139,5 @@ else:
     
     # Informações sobre os dados
     st.info("📁 Faça o upload de um arquivo PDF na barra lateral para começar a análise.")
+
 
